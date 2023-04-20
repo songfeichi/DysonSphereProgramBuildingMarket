@@ -42,9 +42,16 @@ const BASE = [
   ["人造恒星", ["钛合金", "框架材料", "湮灭约束球", "量子芯片"]],
   ["垂直发射井", ["钛合金", "框架材料", "引力透镜", "量子芯片"]],
 ]
-const BASEFORMULA = new Map(BASE)
+//可升级建筑只能加速不能增产，一般不与基本建筑共用产线
+const UPGRADE = [
 
-var Buildings = [...BASEFORMULA.keys()]
+]
+const BATTLE = [
+
+]
+const FORMULA = new Map(BASE)
+
+const Buildings = [...FORMULA.keys()]
 //[
 //   '电力感应塔',     '风力涡轮机',       '采矿机',
 //   '矩阵研究站',     '火力发电厂',       '小型储物仓',
@@ -64,7 +71,6 @@ var Buildings = [...BASEFORMULA.keys()]
 const N = Buildings.length
 const MAXBELT = 6
 const MAXDUPBELT = 2
-var routers = []
 const ALLOWED_DUPL = []//["铁块"]//,"齿轮","电浆激发器"]
 //长度k的子集
 function subset(arr, k) {
@@ -89,7 +95,7 @@ function subset(arr, k) {
 function remain(index) {
   let res = new Map()
   for (let i = index; i < N; i++) {
-    let component = BASEFORMULA.get(Buildings[i])
+    let component = FORMULA.get(Buildings[i])
     for (let z of component) {
       res.set(z, (0 | res.get(z)) + 1)
     }
@@ -132,7 +138,7 @@ async function main() {
   var ans = {}
   var exit = false
   var find_multi_way = true      //是否输出同建筑序列的不同组件顺序
-
+  var routers = []
   function backtrack(current, arr, dups) {
     if (exit == true) return
     // if (dups > MAXDUPBELT) return
@@ -155,7 +161,7 @@ async function main() {
       return
     }
 
-    let component = BASEFORMULA.get(Buildings[current])
+    let component = FORMULA.get(Buildings[current])
     let rem = remain(current + 1)
     let need = arr.reduce((pre, cur) => {
       //去重+以后要用
@@ -201,6 +207,7 @@ async function main() {
         break;
       }
       else if (resume == 'y') {
+        //或许可以复用k之前的
         next()
         break;
       }
