@@ -65,23 +65,24 @@ const UPGRADE = [
 const BATTLE = [
 
 ]
-args.option('autonext', "auto search all possible permutatioin", 'false')
+args.option('autonext', "auto search all possible permutatioin", 'true')
   .option('for', "search for base or upgrade or battle", 'upgrade')
   .option('belt', 'max belts should use', 6)
   .option('duplicate', 'how many belts can break and reuse', 0)
   .option('component', 'components can duplicate, leave empty for all can duplicate', [])
-  .option('multiway', 'search for all possible ways of a permutation', 'true')
+  .option('multiway', 'search for all possible ways of a permutation', 'false')
 
 const config = args.parse(process.argv)
 const MAXBELT = config.belt
 const MAXDUPBELT = config.duplicate
 const ALLOWED_DUPL = config.component//[]//["铁块"]//,"齿轮","电浆激发器"]
-const autonext = config.auto == 'true' ? true : false
+const autonext = config.autonext == 'true' ? true : false
 const multi_way = config.multiway == 'true' ? true : false      //是否输出同建筑序列的不同组件顺序
 const fml = { 'base': BASE, 'upgrade': UPGRADE, 'battle': BATTLE }
 const FORMULA = new Map(fml[config.for])
-const Buildings = [...FORMULA.keys()]
-const N = Buildings.length
+const BUILDING = [...FORMULA.keys()]
+const seq = [...FORMULA.keys()]
+const N = seq.length
 
 //长度k的子集
 function subset(arr, k) {
@@ -106,7 +107,7 @@ function subset(arr, k) {
 function remain(index) {
   let res = new Map()
   for (let i = index; i < N; i++) {
-    let component = FORMULA.get(Buildings[i])
+    let component = FORMULA.get(seq[i])
     for (let z of component) {
       res.set(z, (0 | res.get(z)) + 1)
     }
@@ -116,9 +117,9 @@ function remain(index) {
 
 function sortfn(a, b) {
   let ia, ib;
-  BASE.forEach((v, idx) => {
-    if (v[0] == a) ia = idx
-    if (v[0] == b) ib = idx
+  BUILDING.forEach((v, idx) => {
+    if (v == a) ia = idx
+    if (v == b) ib = idx
   })
   if (ia > ib) return 1;
   else if (ia == ib) return 0;
@@ -132,18 +133,17 @@ function reverse(arr, start, end) {
   }
   //return arr.slice(0,start+1).concat(arr.slice(start,end).reverse())
 }
-//a bug when end
 function next_permutation(arr, sortfn) {
   let k = arr.length - 1
-  while (sortfn(arr[k - 1], arr[k]) == 1) k--;
+  while (k - 1 >= 0 && sortfn(arr[k - 1], arr[k]) == 1) k--;
   let t = k;
-  while (sortfn(arr[t + 1], arr[k - 1]) == 1) t++;
+  while (t + 1 < arr.length && sortfn(arr[t + 1], arr[k - 1]) == 1) t++;
   [arr[k - 1], arr[t]] = [arr[t], arr[k - 1]];
   reverse(arr, k, arr.length - 1)
   return k - 1
 }
 function next() {
-  return next_permutation(Buildings, sortfn)
+  return next_permutation(seq, sortfn)
 }
 function checkDups(routers) {
   let duparr = []
@@ -171,18 +171,19 @@ async function main() {
     if (!multi_way && finded == 1) return
     if (current === N) {
       finded = true
-      ans[[...Buildings]] = 1
-      console.log(Buildings)
+      ans[[...seq]] = 1
+      console.log(seq)
+      console.log("+++++++++++++++++")
       for (let i = 0; i < routers.length; i++) {
         console.log(routers[i])
       }
       let duparr = checkDups(routers)
       console.log("duplicate: ", duparr)
-      console.log("-----------------")
+      console.log("------------------------------------")
       return
     }
 
-    let component = FORMULA.get(Buildings[current])
+    let component = FORMULA.get(seq[current])
     let rem = remain(current + 1)
     let need = arr.reduce((pre, cur) => {
       //去重+以后要用
@@ -197,7 +198,7 @@ async function main() {
       if (dups + newdup > MAXDUPBELT) {
         //not possible
         // if(routers.length>saved_routers.length)
-          // saved_routers = [...routers]
+        // saved_routers = [...routers]
         return
       }
       let candup = [], nodup = []
@@ -224,7 +225,7 @@ async function main() {
     }
   }
   while (!exit) {
-    backtrack(0,[],0)
+    backtrack(0, [], 0)
     let resume = "y"
     if (!autonext && finded) {
       while (true) {
@@ -240,7 +241,10 @@ async function main() {
     }
     finded = false
     if (resume === "y") {
-      next()
+      let current = next()
+      if (current == -1) {
+        exit = true;
+      }
     }
   }
   readline.close();
