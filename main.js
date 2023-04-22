@@ -1,7 +1,10 @@
+#! /usr/bin/env node
 const readline = require('readline/promises').createInterface({
   input: process.stdin,
   output: process.stdout
 })
+const args = require('args')
+
 const BASE = [
   ["电力感应塔", ["铁块", "磁线圈"]],
   ["风力涡轮机", ["铁块", "齿轮", "磁线圈"]],
@@ -19,7 +22,7 @@ const BASE = [
   ["抽水站", ["铁块", "石材", "电动机", "电路板"]],
   ["化工厂", ["钢材", "石材", "玻璃", "电路板"]],
   ["分馏塔", ["钢材", "石材", "玻璃", "处理器"]],
-  ["原油精炼厂", ["钢材", "石材", "电路板", "电浆激发器"]],  
+  ["原油精炼厂", ["钢材", "石材", "电路板", "电浆激发器"]],
   ["大型储物仓", ["钢材", "石材"]],
   ["地基", ["钢材", "石材"]],
   ["喷涂机", ["钢材", "电浆激发器"]],
@@ -42,36 +45,44 @@ const BASE = [
   ["人造恒星", ["钛合金", "框架材料", "湮灭约束球", "量子芯片"]],
   ["垂直发射井", ["钛合金", "框架材料", "引力透镜", "量子芯片"]],
 ]
-//可升级建筑只能加速不能增产，一般不与基本建筑共用产线
+//可升级建筑只能加速不能增产","一般不与基本建筑共用产线
 const UPGRADE = [
-
+  ["星际物流运输站", ["行星内物流运输站", "钛合金", "粒子容器"]],
+  ["轨道采集器", ["星际物流运输站", "超级磁场环", "加力推进器", "蓄电池满"]],
+  ["星际物流运输机", ["钛合金", "处理器", "加力推进器"]],
+  ["物流运输机", ["铁块", "处理器", "推进器"]],
+  ["制作台Mk.Ⅱ", ["制作台Mk.Ⅰ", "石墨烯", "处理器"]],
+  ["制作台Mk.Ⅲ", ["制作台Mk.Ⅱ", "粒子宽带", "量子芯片"]],
+  ["量子化工厂", ["化工厂", "钛化玻璃", "奇异物质", "量子芯片"]],
+  ["极速传送带", ["高速传送带", "超级磁场环", "石墨烯"]],
+  ["高速传送带", ["传送带", "电磁涡轮"]],
+  ["高速分拣器", ["分拣器", "电动机"]],
+  ["极速分拣器", ["高速分拣器", "电磁涡轮"]],
+  ["位面熔炉", ["电弧熔炉", "框架材料", "位面过滤器", "单极磁石"]],
+  ["无线输电塔", ["电力感应塔", "电浆激发器"]],
+  ["卫星配电站", ["无线输电塔", "超级磁场环", "框架材料"]],
 ]
 const BATTLE = [
 
 ]
-const FORMULA = new Map(BASE)
+args.option('autonext', "auto search all possible permutatioin", 'false')
+  .option('for', "search for base or upgrade or battle", 'upgrade')
+  .option('belt', 'max belts should use', 6)
+  .option('duplicate', 'how many belts can break and reuse', 0)
+  .option('component', 'components can duplicate, leave empty for all can duplicate', [])
+  .option('multiway', 'search for all possible ways of a permutation', 'true')
 
+const config = args.parse(process.argv)
+const MAXBELT = config.belt
+const MAXDUPBELT = config.duplicate
+const ALLOWED_DUPL = config.component//[]//["铁块"]//,"齿轮","电浆激发器"]
+const autonext = config.auto == 'true' ? true : false
+const multi_way = config.multiway == 'true' ? true : false      //是否输出同建筑序列的不同组件顺序
+const fml = { 'base': BASE, 'upgrade': UPGRADE, 'battle': BATTLE }
+const FORMULA = new Map(fml[config.for])
 const Buildings = [...FORMULA.keys()]
-//[
-//   '电力感应塔',     '风力涡轮机',       '采矿机',
-//   '矩阵研究站',     '火力发电厂',       '小型储物仓',
-//   '储液罐',         '四向分流器',       '流速监测器',
-//   '分拣器',         '传送带',           '电弧熔炉',
-//   '制作台',         '抽水站',           '化工厂',
-//   '分馏塔',         '原油精炼厂',       '大型储物仓',
-//   '地基',           '喷涂机',           '原油萃取站',
-//   '电磁轨道弹射器', '自动集装机',       '物流配送器',
-//   '太阳能板',       '射线接收站',       '地热发电站',
-//   '推进器',         '蓄电池',           '配送运输机',
-//   '加力推进器',     '行星内物流运输站', '能量枢纽',
-//   '微型聚变发电站', '微型粒子对撞机',   '大型采矿机',
-//   '人造恒星',       '垂直发射井'
-// ]
-
 const N = Buildings.length
-const MAXBELT = 6
-const MAXDUPBELT = 2
-const ALLOWED_DUPL = []//["铁块"]//,"齿轮","电浆激发器"]
+
 //长度k的子集
 function subset(arr, k) {
   const t = [];
@@ -103,59 +114,69 @@ function remain(index) {
   return res;
 }
 
-function sortfn(a,b){
-  let ia,ib;
-  BASE.forEach((v,idx)=>{
-    if(v[0]==a)ia=idx
-    if (v[0]==b)ib=idx
+function sortfn(a, b) {
+  let ia, ib;
+  BASE.forEach((v, idx) => {
+    if (v[0] == a) ia = idx
+    if (v[0] == b) ib = idx
   })
-  if(ia>ib)return 1;
-  else if(ia == ib)return 0;
+  if (ia > ib) return 1;
+  else if (ia == ib) return 0;
   else return -1;
 }
-function reverse(arr,start,end){
-  while(start<end){
-    [arr[start],arr[end]]=[arr[end],arr[start]]
+function reverse(arr, start, end) {
+  while (start < end) {
+    [arr[start], arr[end]] = [arr[end], arr[start]]
     start++;
     end--;
   }
   //return arr.slice(0,start+1).concat(arr.slice(start,end).reverse())
 }
-function next_permutation(arr,sortfn) {
-  let k= arr.length-1
-  while(sortfn(arr[k-1],arr[k])==1)k--;
-  let t=k;
-  while(sortfn(arr[t+1],arr[k-1])==1)t++;
-  [arr[k-1],arr[t]]=[arr[t],arr[k-1]];
-  reverse(arr,k,arr.length-1)
+//a bug when end
+function next_permutation(arr, sortfn) {
+  let k = arr.length - 1
+  while (sortfn(arr[k - 1], arr[k]) == 1) k--;
+  let t = k;
+  while (sortfn(arr[t + 1], arr[k - 1]) == 1) t++;
+  [arr[k - 1], arr[t]] = [arr[t], arr[k - 1]];
+  reverse(arr, k, arr.length - 1)
+  return k - 1
 }
-function next(){
-  next_permutation(Buildings,sortfn)
+function next() {
+  return next_permutation(Buildings, sortfn)
 }
-
+function checkDups(routers) {
+  let duparr = []
+  let dupm = new Map()
+  for (let i = 0; i < routers.length; i++) {
+    // console.log(routers[i])
+    for (let c of routers[i]) {
+      if (dupm.has(c) && i > 0 && routers[i - 1].indexOf(c) == -1)
+        duparr.push(c)
+      dupm.set(c, 1)
+    }
+  }
+  return duparr
+}
 async function main() {
 
   var ans = {}
   var exit = false
-  var find_multi_way = true      //是否输出同建筑序列的不同组件顺序
   var routers = []
+  var finded = false
+  var question = "find! search next?"
+
   function backtrack(current, arr, dups) {
     if (exit == true) return
-    // if (dups > MAXDUPBELT) return
-    if (!find_multi_way && ans[[...Buildings]] == 1) return
+    if (!multi_way && finded == 1) return
     if (current === N) {
+      finded = true
       ans[[...Buildings]] = 1
       console.log(Buildings)
-      let dupm = new Map()
-      let duparr = []
       for (let i = 0; i < routers.length; i++) {
         console.log(routers[i])
-        for (let c of routers[i]) {
-          if (dupm.has(c) && i > 0 && routers[i - 1].indexOf(c) == -1)
-            duparr.push(c)
-          dupm.set(c, 1)
-        }
       }
+      let duparr = checkDups(routers)
       console.log("duplicate: ", duparr)
       console.log("-----------------")
       return
@@ -173,15 +194,20 @@ async function main() {
 
     if (need.length + component.length > MAXBELT) {
       let newdup = need.length + component.length - MAXBELT
-      if (dups + newdup > MAXDUPBELT) return
-      let candup = [],nodup = []
-      for(let z of need){
-        if(ALLOWED_DUPL.length==0 || ALLOWED_DUPL.indexOf(z)!=-1)
+      if (dups + newdup > MAXDUPBELT) {
+        //not possible
+        // if(routers.length>saved_routers.length)
+          // saved_routers = [...routers]
+        return
+      }
+      let candup = [], nodup = []
+      for (let z of need) {
+        if (ALLOWED_DUPL.length == 0 || ALLOWED_DUPL.indexOf(z) != -1)
           candup.push(z)
         else nodup.push(z)
       }
-      nodup=nodup.concat(component)
-      let sub = subset(candup, MAXBELT - nodup.length )
+      nodup = nodup.concat(component)
+      let sub = subset(candup, MAXBELT - nodup.length)
       for (let s of sub) {
         let r = s.concat(nodup)
         routers.push(r)
@@ -197,24 +223,29 @@ async function main() {
       routers.pop()
     }
   }
-
   while (!exit) {
-    backtrack(0, [], 0)
-    while (true) {
-      let resume = await readline.question("next?")
-      if (resume == "n") {
-        exit = true
-        break;
-      }
-      else if (resume == 'y') {
-        //或许可以复用k之前的
-        next()
-        break;
+    backtrack(0,[],0)
+    let resume = "y"
+    if (!autonext && finded) {
+      while (true) {
+        resume = await readline.question(question)
+        if (resume == "n") {
+          exit = true
+          break;
+        }
+        else if (resume == 'y') {
+          break;
+        }
       }
     }
-    
+    finded = false
+    if (resume === "y") {
+      next()
+    }
   }
   readline.close();
   return 0
 }
+
 main()
+

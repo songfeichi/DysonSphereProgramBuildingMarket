@@ -24,5 +24,8 @@
   "bugs": {
     "url": "https://github.com/sungfeichi/dspbuildingalg/issues"
   },
-  "homepage": "https://github.com/sungfeichi/dspbuildingalg#readme"
+  "homepage": "https://github.com/sungfeichi/dspbuildingalg#readme",
+  "dependencies": {
+    "args": "^5.0.3"
+  }
 }
