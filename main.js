@@ -65,10 +65,10 @@ const UPGRADE = [
 const BATTLE = [
 
 ]
-args.option('autonext', "auto search all possible permutatioin", 'true')
-  .option('for', "search for base or upgrade or battle", 'upgrade')
+args.option('autonext', "auto search all possible permutatioin", 'false')
+  .option('for', "search for base or upgrade or battle", 'base')
   .option('belt', 'max belts should use', 6)
-  .option('duplicate', 'how many belts can break and reuse', 0)
+  .option('duplicate', 'how many belts can break and reuse', 2)
   .option('component', 'components can duplicate, leave empty for all can duplicate', [])
   .option('multiway', 'search for all possible ways of a permutation', 'false')
 
@@ -142,8 +142,18 @@ function next_permutation(arr, sortfn) {
   reverse(arr, k, arr.length - 1)
   return k - 1
 }
-function next() {
-  return next_permutation(seq, sortfn)
+function next_permutation_n(arr, sortfn, n) {
+  let right = arr.slice(n + 1)
+  right.sort((a, b) => -sortfn(a, b))
+  arr.splice(n + 1, arr.length - n - 1)
+  arr.push(...right)
+  let k = (n + 1 < arr.length && sortfn(arr[n], arr[n + 1]) >= 1) ? n : n + 1
+  let t = k;
+  while (t + 1 < arr.length && sortfn(arr[t + 1], arr[k - 1]) >= 1) t++;
+  [arr[k - 1], arr[t]] = [arr[t], arr[k - 1]];
+  reverse(arr, k, arr.length - 1)
+  return k - 1
+  // return next_permutation(arr, sortfn)
 }
 function checkDups(routers) {
   let duparr = []
@@ -165,10 +175,15 @@ async function main() {
   var routers = []
   var finded = false
   var question = "find! search next?"
-
+  var saveend = Infinity
+  var saved_routers = []
   function backtrack(current, arr, dups) {
     if (exit == true) return
-    if (!multi_way && finded == 1) return
+    if (!multi_way && finded == true) return
+    if (current < saveend) {
+      //bug backtrack??? nobug
+      saved_routers.push(arr)
+    }
     if (current === N) {
       finded = true
       ans[[...seq]] = 1
@@ -182,7 +197,6 @@ async function main() {
       console.log("------------------------------------")
       return
     }
-
     let component = FORMULA.get(seq[current])
     let rem = remain(current + 1)
     let need = arr.reduce((pre, cur) => {
@@ -192,13 +206,11 @@ async function main() {
       }
       else return pre
     }, [])
-
     if (need.length + component.length > MAXBELT) {
       let newdup = need.length + component.length - MAXBELT
       if (dups + newdup > MAXDUPBELT) {
         //not possible
-        // if(routers.length>saved_routers.length)
-        // saved_routers = [...routers]
+        saveend = Math.min(saveend, current)
         return
       }
       let candup = [], nodup = []
@@ -209,6 +221,10 @@ async function main() {
       }
       nodup = nodup.concat(component)
       let sub = subset(candup, MAXBELT - nodup.length)
+      if (sub.length > 1) {
+        saveend = Math.min(saveend, current)
+      }
+      //todo log in tree
       for (let s of sub) {
         let r = s.concat(nodup)
         routers.push(r)
@@ -224,8 +240,10 @@ async function main() {
       routers.pop()
     }
   }
+
+  let current = 0, arr = [], dups = 0
   while (!exit) {
-    backtrack(0, [], 0)
+    backtrack(current, arr, dups)
     let resume = "y"
     if (!autonext && finded) {
       while (true) {
@@ -239,13 +257,60 @@ async function main() {
         }
       }
     }
-    finded = false
+
     if (resume === "y") {
-      let current = next()
-      if (current == -1) {
-        exit = true;
+      let save = saved_routers.length
+      // while((current = next()) > saved_routers.length);
+      // current = next()
+
+      if (finded) {
+        let n = next_permutation(seq, sortfn)
+        if (n == -1) break//end permutation
+        current = Math.min(saveend - 1, n)
+        // if (saveend -1 < n) {
+        //   //
+        //   current = saveend - 1
+        // }
+        // else {
+        //   current = n
+        // }
+        arr = saved_routers[current]
+        routers = saved_routers.slice(1, current + 1)
+        dups = checkDups(routers).length
+        saved_routers.splice(current)
+        saveend = Infinity
       }
+      else {
+        let n = next_permutation_n(seq, sortfn, saveend)
+        if (n == -1) break
+        //n < saveend
+        current = n
+        arr = saved_routers[current]
+        routers = saved_routers.slice(1, current + 1)
+        dups = checkDups(routers).length
+        saved_routers.splice(current)
+        saveend = Infinity
+        // let k = saveend
+        // let left = seq.slice(0,saveend),right = seq.slice(saveend)
+        // right.sort((a,b)=>-sortfn(a,b))
+        // current = saveend 
+        // seq = left.concat(right)
+        // next()
+        // let k = arr.length - 1
+        // while (k - 1 >= 0 && sortfn(arr[k - 1], arr[k]) == 1) k--;
+        // let t = k;
+        // while (t + 1 < arr.length && sortfn(arr[t + 1], arr[k - 1]) == 1) t++;
+        // [arr[k - 1], arr[t]] = [arr[t], arr[k - 1]];
+        // reverse(arr, k, arr.length - 1)
+      }
+      // reuseindex = current - 1
+      // arr = saved_routers[current]
+      // routers = saved_routers.slice(1, current+1)
+      // dups = checkDups(routers).lengthx
+      // saved_routers = routers
+
     }
+    finded = false
   }
   readline.close();
   return 0
