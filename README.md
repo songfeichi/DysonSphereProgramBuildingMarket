@@ -7,7 +7,7 @@ Solve DSP building super market problem by combining backtrack, permutation and 
 ```
 
 ## Reminder
-For base, ./main.js -d 2, and for upgrade ./main.js -d 0
+For base, ./main.js -d 2, and for upgrade ./main.js -f upgrade -d 0
 
 ## Bugs:
 All issues are welcome. 
