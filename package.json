@@ -16,8 +16,9 @@
   "keywords": [
     "dsp",
     "backtrack",
-    "js",
-    "node"
+    "permutation",
+    "dynamic programming",
+    "js"
   ],
   "author": "sungfeichi",
   "license": "ISC",

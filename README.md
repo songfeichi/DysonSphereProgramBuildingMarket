@@ -1,13 +1,13 @@
-# search building sequences in dsp via backtrack
+# Search buildings sequences in dsp
+Solve DSP building super market problem by combining backtrack, permutation and dynamic programming. This algorithm greatly accelerates searching O(m!n!) permutation, and makes it possible.
 
 ## Usage:
 ```
-node main
-```
-auto yes
-```
-yes | node main > result.txt
+./main.js --help for usage
 ```
 
 ## Reminder
-main.js search a fixed building sequence first for all possible components arrangement, and then search buildling's next_permutation().
+For base, ./main.js -d 2, and for upgrade ./main.js -d 0
+
+## Bugs:
+All issues are welcome. 
