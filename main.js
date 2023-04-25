@@ -26,7 +26,7 @@ var BASE = [
   ["分拣器", ["铁块", "齿轮"]],
   ["传送带", ["铁块", "齿轮"]],
   ["电弧熔炉", ["铁块", "石材", "电路板", "磁线圈"]],
-  ["制作台", ["铁块", "齿轮", "电路板"]],
+  ["制作台Mk.Ⅰ", ["铁块", "齿轮", "电路板"]],
   ["抽水站", ["铁块", "石材", "电动机", "电路板"]],
   ["化工厂", ["钢材", "石材", "玻璃", "电路板"]],
   ["分馏塔", ["钢材", "石材", "玻璃", "处理器"]],
@@ -53,7 +53,7 @@ var BASE = [
   ["人造恒星", ["钛合金", "框架材料", "湮灭约束球", "量子芯片"]],
   ["垂直发射井", ["钛合金", "框架材料", "引力透镜", "量子芯片"]],
 ]
-//可升级建筑只能加速不能增产","一般不与基本建筑共用产线
+//可升级建筑只能加速不能增产,一般不与基本建筑共用产线
 const UPGRADE = [
   ["星际物流运输站", ["行星内物流运输站", "钛合金", "粒子容器"]],
   ["轨道采集器", ["星际物流运输站", "超级磁场环", "加力推进器", "蓄电池满"]],
@@ -85,7 +85,7 @@ args.option('autonext', "auto search all possible permutatioin", 'false')
 const config = args.parse(process.argv)
 const MAXBELT = config.belt
 const MAXDUPBELT = config.duplicate
-const ALLOWED_DUPL = config.component//[]//["铁块"]//,"齿轮","电浆激发器"]
+const ALLOWED_DUPL = config.component//[]//["铁块"]
 const autonext = config.autonext == 'true' ? true : false
 const multi_way = config.multiway == 'true' ? true : false      //是否输出同建筑序列的不同组件顺序
 const doshuffle = config.random == 'true' ? true : false
@@ -93,13 +93,20 @@ const prepermute = config.prepermute == 'true' ? true : false
 const from = { 'base': BASE, 'upgrade': UPGRADE, 'battle': BATTLE }
 let fml = doshuffle ? shuffle(from[config.for]) : from[config.for]
 if (prepermute) {
-  let iron_steel_titanium = ["铁块","钢材","钛合金"]
+  let iron_steel_titanium = ["铁块", "钢材", "钛合金"]
   fml.sort((a, b) => {
     let ca = a[1][0], cb = b[1][0];
-    if(ca == "高纯硅块" || cb =="高纯硅块")return 0
     let ia = iron_steel_titanium.indexOf(ca), ib = iron_steel_titanium.indexOf(cb)
-    return ia==ib?0:(ia-ib)/Math.abs(ia-ib)
+    return ia == ib ? 0 : (ia - ib) / Math.abs(ia - ib)
   })
+  let temp=[]
+  for (let i = 0; i < fml.length; i++) {
+    if (["太阳能板", "物流配送器", "蓄电池", "配送运输机"].indexOf(fml[i][0]) != -1) {
+      temp.push(fml.splice(i,1)[0])
+      i--
+    }
+  }
+  fml.push(...temp)
 }
 console.log('FORMULA', fml)
 const FORMULA = new Map(fml)
@@ -207,7 +214,6 @@ async function main() {
       return
     }
     if (current < saveend) {
-      //bug backtrack??? nobug
       saved_routers.push(arr)
     }
     if (current === N) {
@@ -249,7 +255,6 @@ async function main() {
       if (sub.length > 1) {
         saveend = Math.min(saveend, current)
       }
-      //todo log in tree
       for (let s of sub) {
         let r = s.concat(nodup)
         routers.push(r)
@@ -282,23 +287,11 @@ async function main() {
         }
       }
     }
-
     if (resume === "y") {
-      let save = saved_routers.length
-      // while((current = next()) > saved_routers.length);
-      // current = next()
-
       if (finded) {
         let n = next_permutation(seq, sortfn)
         if (n == -1) break//end permutation
         current = Math.min(saveend - 1, n)
-        // if (saveend -1 < n) {
-        //   //
-        //   current = saveend - 1
-        // }
-        // else {
-        //   current = n
-        // }
         arr = saved_routers[current]
         routers = saved_routers.slice(1, current + 1)
         dups = checkDups(routers).length
@@ -315,25 +308,7 @@ async function main() {
         dups = checkDups(routers).length
         saved_routers.splice(current)
         saveend = Infinity
-        // let k = saveend
-        // let left = seq.slice(0,saveend),right = seq.slice(saveend)
-        // right.sort((a,b)=>-sortfn(a,b))
-        // current = saveend 
-        // seq = left.concat(right)
-        // next()
-        // let k = arr.length - 1
-        // while (k - 1 >= 0 && sortfn(arr[k - 1], arr[k]) == 1) k--;
-        // let t = k;
-        // while (t + 1 < arr.length && sortfn(arr[t + 1], arr[k - 1]) == 1) t++;
-        // [arr[k - 1], arr[t]] = [arr[t], arr[k - 1]];
-        // reverse(arr, k, arr.length - 1)
       }
-      // reuseindex = current - 1
-      // arr = saved_routers[current]
-      // routers = saved_routers.slice(1, current+1)
-      // dups = checkDups(routers).lengthx
-      // saved_routers = routers
-
     }
     finded = false
   }
