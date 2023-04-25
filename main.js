@@ -4,8 +4,16 @@ const readline = require('readline/promises').createInterface({
   output: process.stdout
 })
 const args = require('args')
-
-const BASE = [
+function shuffle(arr) {
+  var res = [], random
+  while (arr.length > 0) {
+    random = Math.floor(Math.random() * arr.length)
+    res.push(arr[random])
+    arr.splice(random, 1)
+  }
+  return res
+}
+var BASE = [
   ["电力感应塔", ["铁块", "磁线圈"]],
   ["风力涡轮机", ["铁块", "齿轮", "磁线圈"]],
   ["采矿机", ["铁块", "电路板", "磁线圈", "齿轮"]],
@@ -38,7 +46,7 @@ const BASE = [
   ["配送运输机", ["铁块", "电磁涡轮", "处理器"]],
   ["加力推进器", ["钛合金", "电磁涡轮"]],
   ["行星内物流运输站", ["钢材", "钛块", "处理器", "粒子容器"]],
-  ["能量枢纽", ["钢材", "钛合金", "处理器", "粒子容器"]],
+  ["能量枢纽", ["钛合金", "钢材", "处理器", "粒子容器"]],
   ["微型聚变发电站", ["钛合金", "超级磁场环", "碳纳米管", "处理器"]],
   ["微型粒子对撞机", ["钛合金", "框架材料", "超级磁场环", "石墨烯", "处理器"]],
   ["大型采矿机", ["钛合金", "框架材料", "超级磁场环", "量子芯片", "光栅石"]],
@@ -69,8 +77,10 @@ args.option('autonext', "auto search all possible permutatioin", 'false')
   .option('for', "search for base or upgrade or battle", 'base')
   .option('belt', 'max belts should use', 6)
   .option('duplicate', 'how many belts can break and reuse', 2)
-  .option('component', 'components can duplicate, leave empty for all can duplicate', [])
+  .option('component', 'components can duplicate, leave empty for all can duplicate', ["铁块"])
   .option('multiway', 'search for all possible ways of a permutation', 'false')
+  .option('random', 'shufffle initial permutation', 'true')
+  .option('prepermute', 'per permute', 'true')
 
 const config = args.parse(process.argv)
 const MAXBELT = config.belt
@@ -78,8 +88,21 @@ const MAXDUPBELT = config.duplicate
 const ALLOWED_DUPL = config.component//[]//["铁块"]//,"齿轮","电浆激发器"]
 const autonext = config.autonext == 'true' ? true : false
 const multi_way = config.multiway == 'true' ? true : false      //是否输出同建筑序列的不同组件顺序
-const fml = { 'base': BASE, 'upgrade': UPGRADE, 'battle': BATTLE }
-const FORMULA = new Map(fml[config.for])
+const doshuffle = config.random == 'true' ? true : false
+const prepermute = config.prepermute == 'true' ? true : false
+const from = { 'base': BASE, 'upgrade': UPGRADE, 'battle': BATTLE }
+let fml = doshuffle ? shuffle(from[config.for]) : from[config.for]
+if (prepermute) {
+  let iron_steel_titanium = ["铁块","钢材","钛合金"]
+  fml.sort((a, b) => {
+    let ca = a[1][0], cb = b[1][0];
+    if(ca == "高纯硅块" || cb =="高纯硅块")return 0
+    let ia = iron_steel_titanium.indexOf(ca), ib = iron_steel_titanium.indexOf(cb)
+    return ia==ib?0:(ia-ib)/Math.abs(ia-ib)
+  })
+}
+console.log('FORMULA', fml)
+const FORMULA = new Map(fml)
 const BUILDING = [...FORMULA.keys()]
 const seq = [...FORMULA.keys()]
 const N = seq.length
@@ -143,6 +166,7 @@ function next_permutation(arr, sortfn) {
   return k - 1
 }
 function next_permutation_n(arr, sortfn, n) {
+  n = Math.min(n, arr.length - 2)
   let right = arr.slice(n + 1)
   right.sort((a, b) => -sortfn(a, b))
   arr.splice(n + 1, arr.length - n - 1)
@@ -179,7 +203,9 @@ async function main() {
   var saved_routers = []
   function backtrack(current, arr, dups) {
     if (exit == true) return
-    if (!multi_way && finded == true) return
+    if (!multi_way && finded == true) {
+      return
+    }
     if (current < saveend) {
       //bug backtrack??? nobug
       saved_routers.push(arr)
@@ -207,17 +233,16 @@ async function main() {
       else return pre
     }, [])
     if (need.length + component.length > MAXBELT) {
-      let newdup = need.length + component.length - MAXBELT
-      if (dups + newdup > MAXDUPBELT) {
-        //not possible
-        saveend = Math.min(saveend, current)
-        return
-      }
       let candup = [], nodup = []
       for (let z of need) {
         if (ALLOWED_DUPL.length == 0 || ALLOWED_DUPL.indexOf(z) != -1)
           candup.push(z)
         else nodup.push(z)
+      }
+      let newdup = need.length + component.length - MAXBELT
+      if (candup.length < newdup || dups + newdup > MAXDUPBELT) {
+        saveend = Math.min(saveend, current)
+        return
       }
       nodup = nodup.concat(component)
       let sub = subset(candup, MAXBELT - nodup.length)
