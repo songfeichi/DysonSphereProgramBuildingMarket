@@ -258,7 +258,7 @@ async function main() {
     }
     let component = FORMULA.get(seq[current])
     let rem = remain(current + 1)
-    let newdup = 0, need = []
+    let cdup = 0, adup = 0, need = []
     for (let c of arr) {
       //去重+以后要用
       if (component.indexOf(c) == -1 && rem.get(c)) {
@@ -270,10 +270,11 @@ async function main() {
       if (arr.indexOf(c) == -1 && routers.some(r => {
         return r.indexOf(c) != -1
       })) {
-        newdup++
+        cdup++
       }
     }
-    if (dups + newdup > MAXDUPBELT) {
+    dups += cdup
+    if (dups > MAXDUPBELT) {
       saveend = Math.min(saveend, current)
       return
     }
@@ -284,8 +285,9 @@ async function main() {
           candup.push(z)
         else nodup.push(z)
       }
-      newdup += need.length + component.length - MAXBELT
-      if (candup.length < newdup || dups + newdup > MAXDUPBELT) {
+      adup = need.length + component.length - MAXBELT
+      dups += adup
+      if (candup.length < adup || dups > MAXDUPBELT) {
         saveend = Math.min(saveend, current)
         return
       }
@@ -297,7 +299,7 @@ async function main() {
       for (let s of sub) {
         let r = s.concat(nodup)
         routers.push(r)
-        backtrack(current + 1, r, dups + newdup);
+        backtrack(current + 1, r, dups);
         routers.pop()
       }
 
