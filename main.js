@@ -13,7 +13,8 @@ function shuffle(arr) {
   }
   return res
 }
-var BASE = [
+
+const BASE = [
   ["电力感应塔", ["铁块", "磁线圈"]],
   ["风力涡轮机", ["铁块", "齿轮", "磁线圈"]],
   ["采矿机", ["铁块", "电路板", "磁线圈", "齿轮"]],
@@ -53,6 +54,30 @@ var BASE = [
   ["人造恒星", ["钛合金", "框架材料", "湮灭约束球", "量子芯片"]],
   ["垂直发射井", ["钛合金", "框架材料", "引力透镜", "量子芯片"]],
 ]
+
+var CUSTOM = [
+  ["射线接收站", ["钢材", "高纯硅块", "光子合并器", "处理器", "超级磁场环"]],
+  ["行星内物流运输站", ["钢材", "钛块", "处理器", "粒子容器"]],
+  ["蓄电池", ["铁块", "超级磁场环", "晶格硅"]],
+  ["配送运输机", ["铁块", "电磁涡轮", "处理器"]],
+  ["人造恒星", ["钛合金", "框架材料", "湮灭约束球", "量子芯片"]],
+  ["流速监测器", ["铁块", "齿轮", "玻璃", "电路板"]],
+  ["化工厂", ["钢材", "石材", "玻璃", "电路板"]],
+  ["分馏塔", ["钢材", "石材", "玻璃", "处理器"]],
+  ["微型聚变发电站", ["钛合金", "超级磁场环", "碳纳米管", "处理器"]],
+  ["微型粒子对撞机", ["钛合金", "框架材料", "超级磁场环", "石墨烯", "处理器"]],
+  ["喷涂机", ["钢材", "电浆激发器"]],
+  ["电磁轨道弹射器", ["钢材", "齿轮", "处理器", "超级磁场环"]],
+  ["物流配送器", ["铁块", "电浆激发器", "处理器"]],
+  ["抽水站", ["铁块", "石材", "电动机", "电路板"]],
+  ["地热发电站", ["钢材", "铜块", "光子合并器", "超级磁场环"]],
+  ["加力推进器", ["钛合金", "电磁涡轮"]],
+  ["原油萃取站", ["钢材", "石材", "电路板", "电浆激发器"]],
+  ["太阳能板", ["高纯硅块", "铜块", "电路板"]],
+  ["大型采矿机", ["钛合金", "框架材料", "超级磁场环", "量子芯片", "光栅石"]],
+  ["能量枢纽", ["钛合金", "钢材", "处理器", "粒子容器"]],
+  ["风力涡轮机", ["铁块", "齿轮", "磁线圈"]],
+]
 //可升级建筑只能加速不能增产,一般不与基本建筑共用产线
 const UPGRADE = [
   ["星际物流运输站", ["行星内物流运输站", "钛合金", "粒子容器"]],
@@ -74,13 +99,13 @@ const BATTLE = [
 
 ]
 args.option('autonext', "auto search all possible permutatioin", 'false')
-  .option('for', "search for base or upgrade or battle", 'base')
+  .option('for', "search for base or upgrade or battle or custom", 'custom')
   .option('belt', 'max belts should use', 6)
-  .option('duplicate', 'how many belts can break and reuse', 2)
+  .option('duplicate', 'how many belts can break and reuse', 0)
   .option('component', 'components can duplicate, leave empty for all can duplicate', ["铁块"])
   .option('multiway', 'search for all possible ways of a permutation', 'false')
   .option('random', 'shufffle initial permutation', 'true')
-  .option('prepermute', 'per permute', 'true')
+  .option('prepermute', 'per permute', 'false')
 
 const config = args.parse(process.argv)
 const MAXBELT = config.belt
@@ -90,7 +115,7 @@ const autonext = config.autonext == 'true' ? true : false
 const multi_way = config.multiway == 'true' ? true : false      //是否输出同建筑序列的不同组件顺序
 const doshuffle = config.random == 'true' ? true : false
 const prepermute = config.prepermute == 'true' ? true : false
-const from = { 'base': BASE, 'upgrade': UPGRADE, 'battle': BATTLE }
+const from = { 'base': BASE, 'upgrade': UPGRADE, 'battle': BATTLE, 'custom': CUSTOM }
 let fml = doshuffle ? shuffle(from[config.for]) : from[config.for]
 if (prepermute) {
   let iron_steel_titanium = ["铁块", "钢材", "钛合金"]
@@ -99,10 +124,10 @@ if (prepermute) {
     let ia = iron_steel_titanium.indexOf(ca), ib = iron_steel_titanium.indexOf(cb)
     return ia == ib ? 0 : (ia - ib) / Math.abs(ia - ib)
   })
-  let temp=[]
+  let temp = []
   for (let i = 0; i < fml.length; i++) {
     if (["太阳能板", "物流配送器", "蓄电池", "配送运输机"].indexOf(fml[i][0]) != -1) {
-      temp.push(fml.splice(i,1)[0])
+      temp.push(fml.splice(i, 1)[0])
       i--
     }
   }
@@ -178,7 +203,8 @@ function next_permutation_n(arr, sortfn, n) {
   right.sort((a, b) => -sortfn(a, b))
   arr.splice(n + 1, arr.length - n - 1)
   arr.push(...right)
-  let k = (n + 1 < arr.length && sortfn(arr[n], arr[n + 1]) >= 1) ? n : n + 1
+  let k = n + 1;
+  while (k >= 1 && sortfn(arr[k - 1], arr[k]) >= 1) k--
   let t = k;
   while (t + 1 < arr.length && sortfn(arr[t + 1], arr[k - 1]) >= 1) t++;
   [arr[k - 1], arr[t]] = [arr[t], arr[k - 1]];
@@ -200,7 +226,7 @@ function checkDups(routers) {
   return duparr
 }
 async function main() {
-
+  var fail_count = 0
   var ans = {}
   var exit = false
   var routers = []
@@ -226,18 +252,31 @@ async function main() {
       }
       let duparr = checkDups(routers)
       console.log("duplicate: ", duparr)
+      console.log("fail_count: ", fail_count)
       console.log("------------------------------------")
       return
     }
     let component = FORMULA.get(seq[current])
     let rem = remain(current + 1)
-    let need = arr.reduce((pre, cur) => {
+    let newdup = 0, need = []
+    for (let c of arr) {
       //去重+以后要用
-      if (component.indexOf(cur) == -1 && rem.get(cur)) {
-        return pre.concat(cur)
+      if (component.indexOf(c) == -1 && rem.get(c)) {
+        need.push(c)
       }
-      else return pre
-    }, [])
+    }
+    for (let c of component) {
+      //arr没有，routers有
+      if (arr.indexOf(c) == -1 && routers.some(r => {
+        return r.indexOf(c) != -1
+      })) {
+        newdup++
+      }
+    }
+    if (dups + newdup > MAXDUPBELT) {
+      saveend = Math.min(saveend, current)
+      return
+    }
     if (need.length + component.length > MAXBELT) {
       let candup = [], nodup = []
       for (let z of need) {
@@ -245,7 +284,7 @@ async function main() {
           candup.push(z)
         else nodup.push(z)
       }
-      let newdup = need.length + component.length - MAXBELT
+      newdup += need.length + component.length - MAXBELT
       if (candup.length < newdup || dups + newdup > MAXDUPBELT) {
         saveend = Math.min(saveend, current)
         return
@@ -299,8 +338,10 @@ async function main() {
         saveend = Infinity
       }
       else {
+        fail_count++
         let n = next_permutation_n(seq, sortfn, saveend)
-        if (n == -1) break
+        if (n == -1)
+          break
         //n < saveend
         current = n
         arr = saved_routers[current]
@@ -312,6 +353,7 @@ async function main() {
     }
     finded = false
   }
+  console.log("fail_count: ", fail_count)
   readline.close();
   return 0
 }
