@@ -4,14 +4,15 @@ const readline = require('readline/promises').createInterface({
   output: process.stdout
 })
 const args = require('args')
+function randint(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min
+}
 function shuffle(arr) {
-  var res = [], random
-  while (arr.length > 0) {
-    random = Math.floor(Math.random() * arr.length)
-    res.push(arr[random])
-    arr.splice(random, 1)
+  const n = arr.length
+  for (let i = 0; i < n - 1; i++) {
+    let rand = randint(i, n);
+    [arr[i], arr[rand]] = [arr[rand], arr[i]]
   }
-  return res
 }
 
 const BASE = [
@@ -116,7 +117,8 @@ const multi_way = config.multiway == 'true' ? true : false      //是否输出�
 const doshuffle = config.random == 'true' ? true : false
 const prepermute = config.prepermute == 'true' ? true : false
 const from = { 'base': BASE, 'upgrade': UPGRADE, 'battle': BATTLE, 'custom': CUSTOM }
-let fml = doshuffle ? shuffle(from[config.for]) : from[config.for]
+const fml = from[config.for]
+doshuffle ? shuffle(fml) : 0
 if (prepermute) {
   let iron_steel_titanium = ["铁块", "钢材", "钛合金"]
   fml.sort((a, b) => {
