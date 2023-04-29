@@ -103,7 +103,7 @@ args.option('autonext', "auto search all possible permutatioin", 'false')
   .option('for', "search for base or upgrade or battle or custom", 'custom')
   .option('belt', 'max belts should use', 6)
   .option('duplicate', 'how many belts can break and reuse', 0)
-  .option('component', 'components can duplicate, leave empty for all can duplicate', ["铁块"])
+  .option('component', 'components can duplicate, leave empty for all can duplicate', "铁块")
   .option('multiway', 'search for all possible ways of a permutation', 'false')
   .option('random', 'shufffle initial permutation', 'true')
   .option('prepermute', 'per permute', 'false')
@@ -111,7 +111,7 @@ args.option('autonext', "auto search all possible permutatioin", 'false')
 const config = args.parse(process.argv)
 const MAXBELT = config.belt
 const MAXDUPBELT = config.duplicate
-const ALLOWED_DUPL = config.component//[]//["铁块"]
+const ALLOWED_DUPL = config.component.split(' ')
 const autonext = config.autonext == 'true' ? true : false
 const multi_way = config.multiway == 'true' ? true : false      //是否输出同建筑序列的不同组件顺序
 const doshuffle = config.random == 'true' ? true : false
